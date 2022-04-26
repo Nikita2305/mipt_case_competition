@@ -1,0 +1,1 @@
+# mipt_case_competition
