@@ -3,9 +3,11 @@ import json
 from parsing.api import RaribleApi
 from parsing.utils import *
 import traceback
+import datetime
 
 col1 = os.path.dirname(__file__) + "/output/collections1.txt"
-SAVING_EVERY = 10
+items1 = os.path.dirname(__file__) + "/output/items1.txt"
+SAVING_EVERY = 25
 
 def difficult_process(api, logger, query, basic_dict = {}, buckets=1, need_logs=False):
     total_collections = 1e18
@@ -29,7 +31,6 @@ def difficult_process(api, logger, query, basic_dict = {}, buckets=1, need_logs=
         prev_cont = collections["continuation"]
         total_collections = collections["total"]
         logger.debug(f"Local status: {i}")
-        # logger.debug(f"Data: {total_collections}")
         i += 1
     return all_collections     
 
@@ -46,8 +47,28 @@ def load_json(filename):
     return ret
 
 def main(logger):
-    api = RaribleApi(DELAY = 1) 
- 
+    api = RaribleApi(DELAY = 1, api_v = "") 
+
+    """
+    try:
+        items_temp = load_json(items1)
+        logger.debug("Got items_temp from the file") 
+    except Exception as ex:
+        logger.debug(f"Error while getting items from the file: {ex}") 
+        # "blockchains": ["ETHEREUM"],
+        basic_dct = { 
+            "showDeleted": False,
+            "lastUpdatedTo": int((datetime.datetime.now() - datetime.timedelta(days=14)).timestamp())
+        }
+        units = difficult_process(api, logger, "items/all", basic_dct, buckets=1, need_logs=True)
+        items_temp = []
+        for unit in units:
+            items_temp += unit["items"]
+        save_json(items_temp, items1) 
+    logger.debug(f"Parsed {len(items_temp)} items")
+    return
+    """
+
     try:
         collections = load_json(col1)
         logger.debug("Got collections from the file") 

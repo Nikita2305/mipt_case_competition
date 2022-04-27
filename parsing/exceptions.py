@@ -40,7 +40,5 @@ class ApiHttpError(VkApiError):
         self.values = values
         self.response = response
 
-        return self.vk.method(self.method, self.values, raw=self.raw)
-
     def __str__(self):
         return 'Http error, response code {}'.format(self.response.status_code)

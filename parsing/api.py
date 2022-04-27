@@ -6,10 +6,11 @@ import time
 
 class RaribleApi:
     
-    def __init__(self, DELAY):
+    def __init__(self, DELAY, api_v=""): # -staging, -dev
         self.lock = threading.Lock()
         self.last_request = 0.0
         self.DELAY = DELAY
+        self.api_v = api_v
 
     def method(self, method, params={}):
         """ Вызов метода API
@@ -37,7 +38,7 @@ class RaribleApi:
                 time.sleep(delay)
 
             response = requests.get(
-                f"https://api-staging.rarible.org/v0.1/{method}",
+                f"https://api{self.api_v}.rarible.org/v0.1/{method}", 
                 params=params
             )
 
