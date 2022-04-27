@@ -46,7 +46,6 @@ def load_json(filename):
     return ret
 
 def main(logger):
-    raise RuntimeError("Wassup")
     api = RaribleApi(DELAY = 1) 
  
     try:
