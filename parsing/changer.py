@@ -38,7 +38,7 @@ def get_date(string):
 def get_first_sell_price(activities):
     for activity in activities:
         if (activity["@type"] == "SELL"):
-            return activity["payment"]["value"]
+            return float(activity["payment"]["value"])
     return None
 
 def get_first_buyer(activities):
@@ -78,7 +78,7 @@ def main(logger):
     # Get previous price
     acts = drop_prev_dates(acts, 14) 
     week_ago_acts = acts.copy()
-    week_ago_acts = drop_prev_dates(week_ago_acts, 60)
+    week_ago_acts = drop_prev_dates(week_ago_acts, 30)
     for collection in collections:
         uniques = set()
         try:
