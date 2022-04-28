@@ -7,13 +7,12 @@ import datetime
 
 col1 = os.path.dirname(__file__) + "/output/collections1.txt"
 items1 = os.path.dirname(__file__) + "/output/items1.txt"
-SAVING_EVERY = 25
+act1 = os.path.dirname(__file__) + "/output/act1.txt"
+SAVING_EVERY = 10
 
-def difficult_process(api, logger, query, basic_dict = {}, buckets=1, need_logs=False):
-    total_collections = 1e18
+def difficult_process(api, logger, query, basic_dict = {}, buckets=1, SIZE=100, need_logs=False):
     all_collections = []
     prev_cont = ""
-    SIZE = 100
     i = 0
     while (i < buckets):
         logger.debug("Sending the query")
@@ -29,7 +28,6 @@ def difficult_process(api, logger, query, basic_dict = {}, buckets=1, need_logs=
         if ("continuation" not in collections):
             break
         prev_cont = collections["continuation"]
-        total_collections = collections["total"]
         logger.debug(f"Local status: {i}")
         i += 1
     return all_collections     
@@ -47,54 +45,89 @@ def load_json(filename):
     return ret
 
 def main(logger):
-    api = RaribleApi(DELAY = 1, api_v = "") 
+    api = RaribleApi(DELAY = 0.35, api_v = "") 
 
-    """
+    # Parse popular NFTs
     try:
         items_temp = load_json(items1)
         logger.debug("Got items_temp from the file") 
     except Exception as ex:
-        logger.debug(f"Error while getting items from the file: {ex}") 
-        # "blockchains": ["ETHEREUM"],
+        logger.debug(f"Error while getting items from the file: {ex}")  
         basic_dct = { 
-            "showDeleted": False,
-            "lastUpdatedTo": int((datetime.datetime.now() - datetime.timedelta(days=14)).timestamp())
+            "blockchains": ["ETHEREUM"],
+            "showDeleted": False 
         }
-        units = difficult_process(api, logger, "items/all", basic_dct, buckets=1, need_logs=True)
+        # "lastUpdatedTo": int((datetime.datetime.now() - datetime.timedelta(days=14)).timestamp())
+        units = difficult_process(api, logger, "items/all", basic_dct, buckets=10)
         items_temp = []
         for unit in units:
             items_temp += unit["items"]
         save_json(items_temp, items1) 
     logger.debug(f"Parsed {len(items_temp)} items")
-    return
-    """
-
+    
+    # Get their collections
+    collections_ids = set()
+    for item in items_temp:
+        collections_ids.add(item["collection"])
+    logger.debug(f"Got {len(collections_ids)} collections")    
+ 
+    # Parse these collections
     try:
         collections = load_json(col1)
         logger.debug("Got collections from the file") 
     except Exception as ex:
         logger.debug(f"Error while getting collections from the file: {ex}")
-        units = difficult_process(api, logger, "collections/all", buckets=10)
         collections = []
-        for unit in units:
-            collections += unit["collections"] 
+        for i, col_id in enumerate(collections_ids):
+            if (i % SAVING_EVERY == SAVING_EVERY - 1):
+                logger.debug(f"Getting collection {i}: {col_id}")
+            collections.append(api.method(f"collections/{col_id}"))
         save_json(collections, col1)
-    
     logger.debug(f"Parsed {len(collections)} collections")
     
+    # Get items for all of them
     for i, collection in enumerate(collections):
-        logger.debug(f"Status: {i}")
+        logger.debug(f"Download items of collection: {i}")
         if ('parsed_items' in collection):
             continue
         basic_dct = {"collection": collection["id"]}
-        units = difficult_process(api, logger, "items/byCollection", basic_dct, buckets=10)
+        units = difficult_process(api, logger, "items/byCollection", basic_dct, buckets=2)
         items = []
         for unit in units:
             items += unit["items"]
         collection["parsed_items"] = items
         if (i % SAVING_EVERY == SAVING_EVERY - 1):
             save_json(collections, col1) 
-      
+    save_json(collections, col1)
+
+    # Count size of items:
+    count_items = 0
+    for collection in collections:
+        count_items += len(collection["parsed_items"])
+    logger.debug(f"Parsed: {count_items} items")
+
+    # Loading act-s
+    try:
+        activities = load_json(act1)
+        logger.debug("Got act-s from the file") 
+    except Exception as ex:
+        logger.debug(f"Error while getting act-s from the file: {ex}")
+        activities = dict()
+
+    # Get activities
+    for i, collection in enumerate(collections):
+        logger.debug(f"Download items statistics of collection: {i}")
+        for item in collection["parsed_items"]:
+            i_id = item["id"]
+            if (i_id in activities):
+                continue
+            basic_dct = {"itemId": i_id, "type": ["SELL", "MINT"]}
+            units = difficult_process(api, logger, "activities/byItem", basic_dct, buckets=2)
+            acts = []
+            for unit in units:
+                acts += unit["activities"]
+            activities[i_id] = acts
+        save_json(activities, act1)
 
 if __name__ == "__main__":
     logging.config.dictConfig(LOGGING_CONFIG)

@@ -12,7 +12,7 @@ class RaribleApi:
         self.DELAY = DELAY
         self.api_v = api_v
 
-    def method(self, method, params={}):
+    def method(self, method, params={}, print_query=False):
         """ Вызов метода API
 
         :param method: Название метода
@@ -37,8 +37,13 @@ class RaribleApi:
             if delay > 0:
                 time.sleep(delay)
 
+            query = f"https://api{self.api_v}.rarible.org/v0.1/{method}"
+
+            if (print_query):
+                print(query, params)
+
             response = requests.get(
-                f"https://api{self.api_v}.rarible.org/v0.1/{method}", 
+                query, 
                 params=params
             )
 
