@@ -4,11 +4,16 @@ from parsing.api import RaribleApi
 from parsing.utils import *
 import traceback
 import datetime
+import random
 
 col1 = os.path.dirname(__file__) + "/output/collections1.txt"
 items1 = os.path.dirname(__file__) + "/output/items1.txt"
 act1 = os.path.dirname(__file__) + "/output/act1.txt"
 SAVING_EVERY = 10
+START_ITEMS = 1000
+MAX_COLLECTIONS = 100
+PER_COLLECTION = 200
+PER_ITEM = 100
 
 def difficult_process(api, logger, query, basic_dict = {}, buckets=1, SIZE=100, need_logs=False):
     all_collections = []
@@ -58,7 +63,7 @@ def main(logger):
             "showDeleted": False 
         }
         # "lastUpdatedTo": int((datetime.datetime.now() - datetime.timedelta(days=14)).timestamp())
-        units = difficult_process(api, logger, "items/all", basic_dct, buckets=10)
+        units = difficult_process(api, logger, "items/all", basic_dct, buckets=START_ITEMS // 100, SIZE=100)
         items_temp = []
         for unit in units:
             items_temp += unit["items"]
@@ -69,8 +74,11 @@ def main(logger):
     collections_ids = set()
     for item in items_temp:
         collections_ids.add(item["collection"])
-    logger.debug(f"Got {len(collections_ids)} collections")    
- 
+    l = list(collections_ids)
+    random.shuffle(l)
+    collections_ids = set(l[:MAX_COLLECTIONS])
+    logger.debug(f"Got {len(collections_ids)} collections")     
+
     # Parse these collections
     try:
         collections = load_json(col1)
@@ -91,7 +99,7 @@ def main(logger):
         if ('parsed_items' in collection):
             continue
         basic_dct = {"collection": collection["id"]}
-        units = difficult_process(api, logger, "items/byCollection", basic_dct, buckets=2)
+        units = difficult_process(api, logger, "items/byCollection", basic_dct, buckets=PER_COLLECTION//100, SIZE=100)
         items = []
         for unit in units:
             items += unit["items"]
@@ -122,7 +130,7 @@ def main(logger):
             if (i_id in activities):
                 continue
             basic_dct = {"itemId": i_id, "type": ["SELL", "MINT"]}
-            units = difficult_process(api, logger, "activities/byItem", basic_dct, buckets=2)
+            units = difficult_process(api, logger, "activities/byItem", basic_dct, buckets=PER_ITEM // 100, SIZE=100)
             acts = []
             for unit in units:
                 acts += unit["activities"]
