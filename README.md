@@ -10,4 +10,5 @@
 * ./scripts/change.sh
 
 ## How to get accuracy score
+> Could be launched without parsing/preparing. Data was collected and saved in `parsing/output/`
 * ./scripts/predict.sh
