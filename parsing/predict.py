@@ -15,9 +15,9 @@ dataset_file = os.path.dirname(__file__) + "/output/collections2.txt"
 def mean_absolute_percentage_error(y_true, y_pred):
     return 100 * (np.abs((y_true - y_pred) / y_true)).mean()
 
-def count_errors(X, y, model):
+def count_errors(X, y, model, file):
     score = accuracy_score(y, model.predict(X))
-    print(f"Accuracy_score of {type(model)}: {score}")
+    file.write(f"Accuracy_score of {type(model)}: {score}\n")
 
 def make_model(X, y, model):
     model.fit(X, y)
@@ -64,7 +64,8 @@ if __name__ == '__main__':
     
     # Results
     X_test, y_test, scale_par = get_numpy(test, scale_par)
-    count_errors(X_test, y_test, lda)
-    count_errors(X_test, y_test, qda)
-    count_errors(X_test, y_test, mnb)
-    count_errors(X_test, y_test, log_regr)
+    with open("out.txt", "w") as f:
+        count_errors(X_test, y_test, lda, f)
+        count_errors(X_test, y_test, qda, f)
+        count_errors(X_test, y_test, mnb, f)
+        count_errors(X_test, y_test, log_regr, f)
